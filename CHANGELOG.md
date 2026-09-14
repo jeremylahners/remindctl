@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## 0.3.7 - 2026-09-13
 
 **Highlights:** `--delete --rename` can no longer silently delete a list, and list mutations are validated before Reminders is touched.

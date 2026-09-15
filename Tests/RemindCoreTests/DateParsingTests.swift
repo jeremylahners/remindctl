@@ -65,6 +65,69 @@ struct DateParsingTests {
     #expect(parsed != nil)
   }
 
+  @Test(
+    "Reject malformed absolute dates",
+    arguments: [
+      "2026-02-30T12:00:00Z", "2025-02-29T12:00:00.123Z",
+      "2026-04-31T12:00:00+02:00", "2026-01-03T12:00:00Zjunk",
+      "2026-01-03T12:00:00+99:00", "2026-01-03T12:00:00+01:99",
+      "2026-01-03T25:00:00Z", "2026-01-03T12:60:00Z",
+      "2026-02-30", "2026-13-01", "2026-01-03junk",
+    ])
+  func rejectMalformedAbsoluteDates(_ input: String) {
+    #expect(DateParsing.parseUserDate(input, calendar: calendar) == nil)
+    #expect(ReminderFiltering.parse(input, calendar: calendar) == nil)
+  }
+
+  @Test(
+    "Date formats do not steal each other's inputs",
+    arguments: [
+      "2026-01-03", "01/03/2026", "03-01-26", "03-01-2026",
+    ])
+  func disambiguateDateFormats(_ input: String) throws {
+    let parsed = try #require(DateParsing.parseUserDateWithMetadata(input, calendar: calendar))
+    #expect(parsed.date == calendar.date(from: DateComponents(year: 2026, month: 1, day: 3)))
+    #expect(parsed.isDateOnly)
+  }
+
+  @Test(
+    "Preserve unambiguous legacy date spellings",
+    arguments: [
+      "2026-1-3", "2026/1/3", "2026.1.3", "1/3/2026",
+    ])
+  func legacyDateSpellings(_ input: String) throws {
+    let parsed = try #require(DateParsing.parseUserDateWithMetadata(input, calendar: calendar))
+    #expect(parsed.date == calendar.date(from: DateComponents(year: 2026, month: 1, day: 3)))
+    #expect(parsed.isDateOnly)
+  }
+
+  @Test(
+    "Preserve unpadded times and whitespace",
+    arguments: [
+      "2026-01-03 9:05", "2026-01-03 9:5", "2026-1-3T9:5", "2026-01-03   09:05",
+    ])
+  func legacyTimeSpellings(_ input: String) throws {
+    let parsed = try #require(DateParsing.parseUserDateWithMetadata(input, calendar: calendar))
+    #expect(parsed.date == calendar.date(from: DateComponents(year: 2026, month: 1, day: 3, hour: 9, minute: 5)))
+    #expect(!parsed.isDateOnly)
+  }
+
+  @Test(
+    "Valid ISO offsets and fractions survive strict validation",
+    arguments: [
+      "2024-02-29T12:34:56Z", "2024-02-29T12:34:56.123456Z",
+      "2024-02-29T14:34:56+02:00", "2024-02-29T02:34:56-1000",
+      "2024-02-29t12:34:56z",
+      "2024-2-29T2:34:56-1000",
+    ])
+  func validAbsoluteDates(_ input: String) throws {
+    let parsed = try #require(DateParsing.parseUserDateWithMetadata(input, calendar: calendar))
+    let expected = try #require(
+      calendar.date(from: DateComponents(year: 2024, month: 2, day: 29, hour: 12, minute: 34, second: 56)))
+    #expect(abs(parsed.date.timeIntervalSince(expected)) < 1)
+    #expect(!parsed.isDateOnly)
+  }
+
   @Test("Format display output")
   func displayFormatting() {
     let date = Date(timeIntervalSince1970: 1_700_000_000)

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reject impossible ISO dates, malformed offsets, and trailing date text; select explicit field order so day-first inputs cannot silently become another date while retaining unambiguous legacy spellings.
+
 ## 0.3.7 - 2026-09-13
 
 **Highlights:** `--delete --rename` can no longer silently delete a list, and list mutations are validated before Reminders is touched.
